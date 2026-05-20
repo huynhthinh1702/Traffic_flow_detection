@@ -1,0 +1,14 @@
+flask
+ultralytics
+opencv-python
+numpy
+
+python-docx
+lxml
+
+torch
+torchvision
+torchaudio
+
+Pillow
+matplotlib

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Realtime - Vehicle Counting{% endblock %}
+
+{% block content %}
+
+    <div class="card">
+        <h2>Realtime nhận diện & đếm phương tiện</h2>
+
+        <div class="realtime-grid">
+
+            <div class="realtime-video">
+                <div class="realtime-pill">
+                    <span class="dot dot-live"></span>
+                    <span id="statusText">Đang xử lý realtime...</span>
+                </div>
+
+                <img id="liveFeed" src="/video_feed" width="100%" class="preview-img">
+            </div>
+
+            <div class="realtime-stats">
+                <h3>Thống kê realtime</h3>
+
+                <div class="stat-row"><span>Xe máy</span><b id="motorbike">0</b></div>
+                <div class="stat-row"><span>Xe hơi</span><b id="car">0</b></div>
+                <div class="stat-row"><span>Xe bus</span><b id="bus">0</b></div>
+                <div class="stat-row"><span>Xe tải</span><b id="truck">0</b></div>
+                <div class="divider"></div>
+                <div class="stat-row"><span>FPS</span><b id="fps">0</b></div>
+                <div class="stat-row"><span>Trạng thái giao thông</span><b id="trafficStatus">Bình thường</b></div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none;">
+        <h2>Video kết quả (xem lại)</h2>
+        <video id="resultVideo" controls playsinline></video>
+        <p id="autoComment" class="hint"></p>
+
+        <div class="timeline-controls">
+            <button type="button" id="jumpPeakBtn">Tua tới phút cao điểm</button>
+        </div>
+        <div id="timelineBadges" class="timeline-badges"></div>
+
+        <h3>Tốc độ ước lượng (km/h)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Track ID</th>
+                    <th>Loại xe</th>
+                    <th>Tốc độ</th>
+                </tr>
+            </thead>
+            <tbody id="speedRows"></tbody>
+        </table>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const realtimeTimer = setInterval(() => {
+    fetch('/realtime_data')
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("motorbike").innerText = data.motorbike;
+        document.getElementById("car").innerText = data.car;
+        document.getElementById("bus").innerText = data.bus;
+        document.getElementById("truck").innerText = data.truck;
+        document.getElementById("fps").innerText = data.fps;
+        document.getElementById("trafficStatus").innerText = data.status || "Bình thường";
+    });
+}, 500);
+
+const statusTimer = setInterval(() => {
+    fetch('/realtime_status')
+    .then(res => res.json())
+    .then(data => {
+        const statusText = document.getElementById("statusText");
+        if (data.processing) {
+            statusText.innerText = "Đang xử lý video...";
+            return;
+        }
+
+        if (data.error) {
+            statusText.innerText = data.error;
+            clearInterval(statusTimer);
+            clearInterval(realtimeTimer);
+            return;
+        }
+
+        if (data.done && data.result_video) {
+            statusText.innerText = "Hoàn tất. Bạn có thể xem lại video kết quả bên dưới.";
+
+            const card = document.getElementById("resultCard");
+            const video = document.getElementById("resultVideo");
+
+            if (card.style.display === "none") {
+                card.style.display = "block";
+            }
+
+            const url = `/uploads/${encodeURIComponent(data.result_video)}`;
+            if (video.getAttribute("src") !== url) {
+                video.setAttribute("src", url);
+            }
+
+            document.getElementById("autoComment").innerText = data.auto_comment || "";
+
+            const speedRows = document.getElementById("speedRows");
+            speedRows.innerHTML = "";
+            (data.top_speed_samples || []).forEach(item => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${item.track_id}</td><td>${item.type}</td><td>${item.speed_kmh}</td>`;
+                speedRows.appendChild(tr);
+            });
+
+            const timelineWrap = document.getElementById("timelineBadges");
+            timelineWrap.innerHTML = "";
+            (data.replay_timeline || []).forEach(item => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "timeline-chip";
+                btn.innerText = `Phút ${item.minute} - ${item.status} (${item.flow})`;
+                btn.addEventListener("click", () => {
+                    video.currentTime = Math.max(0, Number(item.minute || 0) * 60);
+                    video.play();
+                });
+                timelineWrap.appendChild(btn);
+            });
+
+            const jumpPeakBtn = document.getElementById("jumpPeakBtn");
+            jumpPeakBtn.onclick = () => {
+                const peakMinute = Number(data.peak_minute || 0);
+                video.currentTime = Math.max(0, peakMinute * 60);
+                video.play();
+            };
+
+            clearInterval(statusTimer);
+            clearInterval(realtimeTimer);
+        } else {
+            statusText.innerText = "Chờ kết quả...";
+        }
+    });
+}, 1000);
+</script>
+{% endblock %}

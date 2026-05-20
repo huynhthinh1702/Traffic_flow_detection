@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Vehicle Counting{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+
+    <!-- CHART -->
+    <div class="card">
+        <h2>Biểu đồ tổng phương tiện</h2>
+
+        <div class="chart-box">
+            <canvas id="vehicleChart"
+                    data-total='{{ total | tojson }}'></canvas>
+        </div>
+    </div>
+
+    <!-- FLOW -->
+    <div class="card">
+        <h2>Biểu đồ lưu lượng xe theo phút</h2>
+        <div class="chart-box">
+            <canvas id="flowChart"
+                data-labels='{{ flow_labels | tojson }}'
+                data-values='{{ flow_data | tojson }}'>
+            </canvas>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card">
+        <h2>Lịch sử xử lý video</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Video</th>
+                    <th>Xe máy</th>
+                    <th>Xe hơi</th>
+                    <th>Xe bus</th>
+                    <th>Xe tải</th>
+                    <th>Nhận xét tự động</th>
+                    <th>Phút cao điểm</th>
+                    <th>Lưu lượng đỉnh</th>
+                    <th>Thời gian</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>{{ row[0] }}</td>
+
+                    <!-- ✅ FIX SQLITE -->
+                    <td><span class="badge motorbike">{{ row[1] }}</span></td>
+                    <td><span class="badge car">{{ row[2] }}</span></td>
+                    <td><span class="badge bus">{{ row[3] }}</span></td>
+                    <td><span class="badge truck">{{ row[4] }}</span></td>
+                    <td style="text-align:left;max-width:360px;">{{ row[6] }}</td>
+                    <td>{{ row[7] if row[7] is not none else "-" }}</td>
+                    <td>{{ row[8] }}</td>
+                    <td>{{ row[9] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <a class="footer-link" href="/"></a>
+    </div>
+
+<!-- ===== STAT CARDS ===== -->
+<div class="stats-grid">
+
+    <div class="stat-card">
+        <div class="stat-value">{{ total_vehicles }}</div>
+        <div class="stat-label">Tổng số phương tiện</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-value">{{ total_videos }}</div>
+        <div class="stat-label">Số video đã xử lý</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-value">Phút {{ peak_minute }}</div>
+        <div class="stat-label">Phút cao điểm</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-value">{{ peak_value }}</div>
+        <div class="stat-label">Lưu lượng lớn nhất</div>
+    </div>
+
+</div>
+
+{% if latest_result %}
+<div class="card">
+    <h2>Tóm tắt lần xử lý gần nhất</h2>
+    <p><b>Trạng thái:</b> {{ latest_result.traffic_status }}</p>
+    <p><b>Nhận xét:</b> {{ latest_result.auto_comment }}</p>
+</div>
+{% endif %}
+{% endblock %}
+
+<!-- CHART -->
+{% block scripts %}
+<script>
+const canvas = document.getElementById("vehicleChart");
+const totalData = JSON.parse(canvas.dataset.total);
+
+new Chart(canvas, {
+    type: 'bar',
+    data: {
+        labels: ['Xe máy', 'Xe hơi', 'Xe bus', 'Xe tải'],
+        datasets: [{
+            label: 'Tổng số phương tiện',
+            data: totalData,
+            backgroundColor: ['#f59e0b', '#2563eb', '#16a34a', '#dc2626']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+</script>
+
+<!-- FLOW -->
+<script>
+const flowCanvas = document.getElementById("flowChart");
+
+if (flowCanvas) {
+    const labels = JSON.parse(flowCanvas.dataset.labels);
+    const values = JSON.parse(flowCanvas.dataset.values);
+
+    new Chart(flowCanvas, {
+        type: 'line',
+        data: {
+            labels: labels.map(m => `Phút ${m}`),
+            datasets: [{
+                label: 'Số xe',
+                data: values,
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+</script>
+{% endblock %}

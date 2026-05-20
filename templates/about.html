@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Giới thiệu - Vehicle Counting{% endblock %}
+
+{% block content %}
+
+    <!-- TÊN DỰ ÁN -->
+    <div class="card">
+        <h2>Tên dự án</h2>
+        <p class="lead">{{ project_name }}</p>
+    </div>
+
+    <!-- GIỚI THIỆU DỰ ÁN -->
+    <div class="card">
+        <h2>Giới thiệu dự án</h2>
+        <p class="prose">{{ project_intro or "Chưa có nội dung giới thiệu (thiếu file docx hoặc dữ liệu trống)." }}</p>
+    </div>
+
+    <!-- THÀNH VIÊN NHÓM -->
+    <div class="card">
+        <h2>Thành viên thực hiện</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Họ và tên</th>
+                    <th>MSSV</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in members %}
+                <tr>
+                    <td>{{ m.name }}</td>
+                    <td>{{ m.id }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}

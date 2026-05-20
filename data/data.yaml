@@ -1,0 +1,10 @@
+train: D:/study_V1.4.1/study/data/images/train
+val: D:/study_V1.4.1/study/data/images/val
+test: D:/study_V1.4.1/study/data/images/test
+
+nc: 4
+names:
+  - motorbike
+  - car
+  - bus
+  - truck

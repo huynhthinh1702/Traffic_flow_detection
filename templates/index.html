@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Trang chủ - Vehicle Counting{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Upload video giao thông</h2>
+
+    {% if error %}
+    <p class="muted">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data"
+          class="upload-box"
+          onsubmit="showLoading()">
+        <input type="file" name="video" accept="video/*" required>
+        <div class="actions-row">
+            <button type="submit">Bắt đầu nhận diện</button>
+            <a class="btn-secondary" href="/realtime">Xem realtime</a>
+            <a class="btn-ghost" href="/dashboard">Mở dashboard</a>
+        </div>
+    </form>
+
+    <div id="loading" class="loading" style="display:none;">
+        <h3>Đang xử lý video, vui lòng chờ...</h3>
+        <p class="muted">Trang sẽ tự chuyển đến realtime sau khi upload xong.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showLoading() {
+    document.getElementById("loading").style.display = "block";
+}
+</script>
+{% endblock %}
